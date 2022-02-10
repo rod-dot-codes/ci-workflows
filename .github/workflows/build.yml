@@ -1,0 +1,50 @@
+name: Deploy Yarn Workspaces to Environment Specified
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: false
+        type: string
+        default: 'development'
+      environment:
+        required: false
+        type: string
+        default: 'staging'
+    outputs:
+
+
+jobs:
+  reusable_workflow_job:
+    runs-on: ubuntu-latest
+    name: Build yarn workspaces in the specified branch and environment configuration
+    env:
+      BRANCH: ${ inputs.branch }
+      ENVIRONMENT: ${ inputs.environment }
+      ENV: ${ inputs.environment }
+    steps:
+      - run: echo "::notice::Configured BRANCH=`${{ env.BRANCH }}`"
+      - run: echo "::notice::Configured ENVIRONMENT=`${{ env.ENVIRONMENT }}`"
+      - run: echo "::notice::Configured ENV=`${{ env.ENV }}`"
+      - name: Check ENV and Environment equal
+        if: ${{ env.ENVIRONMENT }} != ${{ env.ENV }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+              core.setFailed('ENVIRONMENT and ENV are not equivalent!')
+      - name: Check the BRANCH is not the main branch
+        if: ${{ env.BRANCH }} != "main"
+        uses: actions/github-script@v3
+        with:
+          script: |
+              core.setFailed('You cannot deploy the Main branch!')
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 'lts'
+      - run: npm install -g yarn
+      - run: yarn set version berry
+      - run: yarn install --non-interactive --frozen-lockfile
+      - run: yarn workspaces foreach -pt run build
