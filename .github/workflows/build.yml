@@ -15,13 +15,13 @@ on:
 
 
 jobs:
-  reusable_workflow_job:
+  build:
     runs-on: ubuntu-latest
     name: Build yarn workspaces in the specified branch and environment configuration
     env:
-      BRANCH: ${ inputs.branch }
-      ENVIRONMENT: ${ inputs.environment }
-      ENV: ${ inputs.environment }
+      BRANCH: ${{ inputs.branch }}
+      ENVIRONMENT: ${{ inputs.environment }}
+      ENV: ${{ inputs.environment }}
     steps:
       - run: echo "::notice::Configured BRANCH=`${{ env.BRANCH }}`"
       - run: echo "::notice::Configured ENVIRONMENT=`${{ env.ENVIRONMENT }}`"
