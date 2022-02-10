@@ -1,0 +1,61 @@
+name: "yarn-build"
+description: "Build a yarn workspaces project and use s3_website to deploy it"
+inputs:
+  branch-to-deploy:
+    required: true
+    description: "The branch to deploy"
+  environment-to-deploy:
+    required: true
+    description: "The environment to deploy"
+
+runs:
+  using: "composite"
+  steps:
+    - run: echo "{name}={value}" >> $GITHUB_ENV
+      shell: bash
+      with:
+        name: "BRANCH"
+        value: ${{ input.branch-to-deploy }}
+    - run: echo "{name}={value}" >> $GITHUB_ENV
+      shell: bash
+      with:
+        name: "ENVIRONMENT"
+        value: ${{ input.environment-to-deploy }}
+    - run: echo "{name}={value}" >> $GITHUB_ENV
+      shell: bash
+      with:
+        name: "ENV"
+        value: ${{ input.environment-to-deploy }}
+    - run: echo "::notice::Configured BRANCH=`${{ env.BRANCH }}`"
+      shell: bash
+    - run: echo "::notice::Configured ENVIRONMENT=`${{ env.ENVIRONMENT }}`"
+      shell: bash
+    - run: echo "::notice::Configured ENV=`${{ env.ENV }}`"
+      shell: bash
+
+    - name: Check ENV and Environment equal
+      if: ${{ env.ENVIRONMENT }} != ${{ env.ENV }}
+      uses: actions/github-script@v3
+      with:
+        script: |
+          core.setFailed('ENVIRONMENT and ENV are not equivalent!')
+    - name: Check the BRANCH is not the main branch
+      if: ${{ env.BRANCH }} != "main"
+      uses: actions/github-script@v3
+      with:
+        script: |
+          core.setFailed('You cannot deploy the Main branch!')
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ env.BRANCH }}
+    - uses: actions/setup-node@v2
+      with:
+        node-version: "lts"
+    - run: npm install -g yarn
+      shell: bash
+    - run: yarn set version berry
+      shell: bash
+    - run: yarn install --non-interactive --frozen-lockfile
+      shell: bash
+    - run: yarn workspaces foreach -pt run build
+      shell: bash
